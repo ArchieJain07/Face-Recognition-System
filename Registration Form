@@ -1,0 +1,131 @@
+from ctypes.wintypes import INT
+from re import I
+from tkinter import*
+from tkinter import messagebox
+import cv2
+from numpy import save
+from sqlalchemy import BLOB, INTEGER, VARCHAR
+from PIL import Image
+import os
+import mysql.connector
+
+
+root = Tk()
+root.geometry("800x600")
+root.title("Registration form")
+root.config(bg="light grey")
+
+def show_frame(id):
+    cam = cv2.VideoCapture(0)
+    cv2.namedWindow("test")
+    while True:
+        ret, frame = cam.read()
+        if not ret:
+            print("Failed to grab a frame")
+            break
+        cv2.imshow("test", frame)
+
+        k = cv2.waitKey(1)
+        if k % 256 == 27:
+            print("Escape hit,closing..")
+            break
+        elif k % 257 == 32:
+            image_path = r'c:\Users\shree\Documents\FaceRecognition\images\opencv_frame_37.png'
+            directory = r'c:\Users\shree\Documents\FaceRecognition\images'
+            imgs = cv2.imread(image_path)
+            os.chdir(directory)
+            img_name = "opencv_frame_{}.png".format(id)
+            cv2.imwrite(img_name, imgs)
+            print("{}written!".format(img_name))
+    return img_name
+    
+    cam.release()
+cv2.destroyAllWindows()
+
+
+
+
+def register_data():
+        db = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="",
+            database="registrationform"
+        )
+        cursor = db.cursor()
+        try:
+            cursor.execute("""CREATE TABLE user_details
+                          (ID INT
+                           Name VARCHAR(30),
+                           MobileNum VARCHAR,
+                           Email VARCHAR(100)
+                           Imagename VARCHAR(255)
+                           )""")
+        except:
+            print("Already created")
+
+        sql = """INSERT INTO user_details(Name,MobileNum,Email)
+               VALUES(%s,%s,%s)"""
+        values = (Nameentry.get(), Mobileentry.get(), Emailentry.get())
+        cursor.execute(sql, values)
+        db.commit()
+
+    
+        id = cursor.lastrowid
+        
+
+        img=show_frame(id)
+        frame1.quit()
+        
+        sql="UPDATE user_details  SET Imagename=%s WHERE id=%s"
+        values = (img , id)
+        cursor.execute(sql, values)
+        db.commit()
+        
+        db.close()
+        print("Successfully inserted")
+        
+
+
+frame1 = Frame(root, bg="light grey")
+frame1.place(x=100, y=100, width=600, height=400)
+Label(frame1, text="Register Here!!", font=(
+    'Times new roman', 28, 'bold'), bg="light grey").place(x=170, y=30)
+
+Name = Label(frame1, text="Name:", font=(
+    "Times new roman", 20), bg="light grey")
+Mobile = Label(frame1, text="Mobile Num:", font=(
+    "Times new roman", 20), bg="light grey")
+Email = Label(frame1, text="Email:", font=(
+    "Times new roman", 20), bg="light grey")
+ImageCapture = Label(frame1, text="Camera:", font=(
+    "Times new roman", 20), bg="light grey")
+
+Name.place(x=50, y=100)
+Mobile.place(x=50, y=150)
+Email.place(x=50, y=200)
+
+
+Namevalue = StringVar
+Mobilevalue = VARCHAR
+Emailvalue = VARCHAR
+ImageCapturevalue = BLOB
+
+Nameentry = Entry(frame1, textvariable=Namevalue,
+                  font=("times new roman", 15), bg='white')
+Mobileentry = Entry(frame1, textvariable=Mobilevalue,
+                    font=("times new roman", 15), bg='white')
+Emailentry = Entry(frame1, textvariable=Emailvalue,
+                   font=("times new roman", 15), bg='white')
+
+
+Nameentry.place(x=250, y=100)
+Mobileentry.place(x=250, y=150)
+Emailentry.place(x=250, y=200)
+
+
+
+Button(text="Submit", command=register_data, font=(
+    "times new roman", 17), bg='light grey').place(x=300, y=350)
+
+root.mainloop()
